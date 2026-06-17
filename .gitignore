@@ -1,6 +1,72 @@
-_site/
-.sass-cache/
-.jekyll-metadata
+# ==========================================
+# EUNIPRINCEZ DIGITAL - .gitignore Template
+# Autor: Juan Valentín García Espinoza
+# ==========================================
+
+# --- Entornos Virtuales y Dependencias ---
+.venv/
+venv/
+ENV/
+env/
+bin/
+lib/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+node_modules/
+
+# --- Caché de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Seguridad y Archivos de Sello Digital (SAT / CSD / Criptografía) ---
+# ¡CRÍTICO! Nunca subir llaves privadas ni certificados personales al repositorio
+*.key
+*.cer
+*.sdg
+*.enc
+*.pem
+*.pfx
+*.p12
+/Euniprincez_Auth/
+
+# --- Configuraciones del Entorno y Credenciales ---
+.env
+.env.local
+.env.*
+*.secret
+config.json
+
+# --- Bases de Datos y Almacenamiento Local ---
+*.db
+*.sqlite3
+*.mdf
+*.ldf
+
+# --- IDEs y Editores de Código (VS Code, Android Studio, IntelliJ) ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
 .DS_Store
-Gemfile.lock
-.jekyll-cache
+Thumbs.db
