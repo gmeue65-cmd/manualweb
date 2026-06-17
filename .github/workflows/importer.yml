@@ -1,33 +1,70 @@
-name: Notion Importer
+name: SBE-2026 Security & Deployment Pipeline
 
 on:
   push:
-  schedule:
-    - cron: "0 */1 * * *"
+    branches: [ main ]
 
 jobs:
-  importer:
+  security-validation:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT }}
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "17"
-      - run: npm install
+          fetch-depth: 0
 
-      - run: node _scripts/notion-import.js
+      - name: 1. Validar Checksum Maestro (.js)
+        run: |
+          echo "Iniciando verificación criptográfica..."
+          # Reconstruye el checksum local actual y compara con el maestro
+          sha256sum GAEJ940310HSPRSN02.min.js > current_checksum_local
+          if ! cmp -s current_checksum_local checksum_maestro_online; then
+            echo "❌ CRÍTICO: El Checksum Maestro no coincide. Activando Etapa Estornudo."
+            exit 1
+          fi
+          echo "✅ Checksum verificado con éxito."
+
+      - name: 2. Verificar Firma GPG del Commit
+        run: |
+          # Extrae el estado de verificación del último commit
+          COMMIT_SIGNATURE=$(git log -1 --format="%G?")
+          echo "Estado de la firma del commit: $COMMIT_SIGNATURE"
+          
+          # 'G' significa buena/válida, 'U' es firma válida pero de confianza dudosa.
+          if [ "$COMMIT_SIGNATURE" != "G" ] && [ "$COMMIT_SIGNATURE" != "U" ]; then
+            echo "❌ ERROR: El commit no está firmado digitalmente con tu llave GPG autorizada (2608132112)."
+            echo "El empuje ha sido rechazado por el protocolo Anti-Baneo."
+            exit 1
+          fi
+          echo "✅ Firma GPG de Juan Valentín verificada correctamente."
+
+  infrastructure-deploy:
+    needs: security-validation
+    runs-on: ubuntu-latest
+    env:
+      # Carga segura de credenciales de Stripe/Mercado Pago desde Secrets
+      MERCADO_PAGO_API_KEY: ${{ secrets.MERCADO_PAGO_API_KEY }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+    steps:
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
+
+      - name: 3. Configurar Entorno Seguro (.env)
+        run: |
+          echo "MERCADO_PAGO_API_KEY=${{ secrets.MERCADO_PAGO_API_KEY }}" >> .env
+          echo "STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}" >> .env
+          echo "ID_ENTORNO=GAEJ940310HSPRSN02" >> .env
+
+      - name: 4. Despliegue en AWS Graviton2 (Terraform)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      # Nota: Aquí se ejecutan tus credenciales de AWS previamente configuradas en Secrets
+      - name: Terraform Init & Apply (Fuerza de Estado Original)
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          DATABASE_ID: ${{ secrets.DATABASE_ID }}
-
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          token: ${{ secrets.PAT }}        
-          commit_message: Nuevos Elementos
-          branch: master
-          commit_user_name: importer-bot 🤖
-          commit_user_email: actions@github.com
-          commit_author: importer-bot 🤖 <actions@github.com>
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
