@@ -19,8 +19,6 @@ bundle exec jekyll serve
 ```
 
 ## License
-
-Released under [the MIT license](LICENSE).
 /**
  * ® TITULAR: JUAN VALENTÍN GARCÍA ESPINOZA
  * ID LEGAL: GAEJ940310HSPRSN02
